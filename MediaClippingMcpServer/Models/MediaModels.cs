@@ -47,3 +47,19 @@ public record ToolResult(
     [property: JsonPropertyName("error")] string? Error = null,
     [property: JsonPropertyName("mediaInfo")] MediaInfo? MediaInfo = null
 );
+
+public record DownloadMediaRequest(
+    [property: JsonPropertyName("url")] string Url,
+    [property: JsonPropertyName("outputPath")] string OutputPath,
+    [property: JsonPropertyName("format")] string? Format = null,
+    [property: JsonPropertyName("audioOnly")] bool AudioOnly = false
+);
+
+public record DownloadMediaResult(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("outputPath")] string? OutputPath = null,
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("title")] string? Title = null,
+    [property: JsonPropertyName("duration")] TimeSpan? Duration = null,
+    [property: JsonPropertyName("thumbnailUrl")] string? ThumbnailUrl = null
+);

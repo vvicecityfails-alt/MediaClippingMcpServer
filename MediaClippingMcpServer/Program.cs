@@ -15,7 +15,8 @@ builder.Services
     .WithTools<ClipMediaTool>()
     .WithTools<ExtractAudioTool>()
     .WithTools<ConvertMediaTool>()
-    .WithTools<GetMediaInfoTool>();
+    .WithTools<GetMediaInfoTool>()
+    .WithTools<DownloadMediaTool>();
 
 builder.Services.AddSingleton<IMediaClippingService, MediaClippingService>();
 

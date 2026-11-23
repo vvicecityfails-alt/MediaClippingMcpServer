@@ -9,6 +9,7 @@ An MCP (Model Context Protocol) server that provides video and audio clipping ca
 
 ## Features
 
+- **Download Media** - Download videos from YouTube, Vimeo, Twitter, and 1000+ sites (via yt-dlp)
 - **Clip Media** - Trim video/audio by start/end time or duration
 - **Extract Audio** - Extract audio track from video files
 - **Convert Media** - Convert between formats with codec/preset control
@@ -20,6 +21,7 @@ An MCP (Model Context Protocol) server that provides video and audio clipping ca
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [FFmpeg](https://ffmpeg.org/download.html) installed and in PATH
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) for non-YouTube URLs (optional but recommended)
 
 ### From Source
 
@@ -71,6 +73,7 @@ Or if installed as a tool:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
+| `download_media` | Download from URL (YouTube, Vimeo, Twitter, etc.) | `url`, `outputPath`, `format?`, `audioOnly?` |
 | `clip_media` | Trim media by timeframe | `inputPath`, `outputPath`, `startTime`, `endTime?`, `duration?` |
 | `extract_audio` | Extract audio from video | `inputPath`, `outputPath`, `audioCodec?`, `bitrate?` |
 | `convert_media` | Convert media format | `inputPath`, `outputPath`, `videoCodec?`, `audioCodec?`, `preset?` |
@@ -83,6 +86,41 @@ Times can be specified as:
 - Seconds as number (e.g., `90` or `90.5`)
 
 ## Examples
+
+### Download a YouTube video
+```json
+{
+  "tool": "download_media",
+  "arguments": {
+    "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "outputPath": "/path/to/video.mp4"
+  }
+}
+```
+
+### Download audio only from YouTube
+```json
+{
+  "tool": "download_media",
+  "arguments": {
+    "url": "https://youtu.be/dQw4w9WgXcQ",
+    "outputPath": "/path/to/audio.mp3",
+    "audioOnly": true
+  }
+}
+```
+
+### Download from other sites (requires yt-dlp)
+```json
+{
+  "tool": "download_media",
+  "arguments": {
+    "url": "https://vimeo.com/123456789",
+    "outputPath": "/path/to/video.mp4",
+    "format": "mp4"
+  }
+}
+```
 
 ### Clip a video from 30s to 90s
 ```json
@@ -146,12 +184,13 @@ MediaClippingMcpServer/
 ├── Program.cs                 # MCP server entry point
 ├── Services/
 │   ├── IMediaClippingService.cs
-│   └── MediaClippingService.cs  # FFmpeg wrapper via FFMpegCore
+│   └── MediaClippingService.cs  # FFmpeg + YouTube/yt-dlp wrapper
 ├── Tools/
 │   ├── ClipMediaTool.cs
 │   ├── ExtractAudioTool.cs
 │   ├── ConvertMediaTool.cs
-│   └── GetMediaInfoTool.cs
+│   ├── GetMediaInfoTool.cs
+│   └── DownloadMediaTool.cs
 ├── Models/
 │   └── MediaModels.cs
 └── MediaClippingMcpServer.csproj
@@ -161,7 +200,9 @@ MediaClippingMcpServer/
 
 - [ModelContextProtocol](https://www.nuget.org/packages/ModelContextProtocol) - Official MCP SDK for .NET
 - [FFMpegCore](https://www.nuget.org/packages/FFMpegCore) - Cross-platform FFmpeg wrapper
+- [YoutubeExplode](https://www.nuget.org/packages/YoutubeExplode) - YouTube video downloading
 - Microsoft.Extensions.Hosting / Logging
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - External tool for non-YouTube sites (optional)
 
 ## Monetization
 

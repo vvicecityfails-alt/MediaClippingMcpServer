@@ -1,0 +1,53 @@
+# Python MCP Server for Media Clipping
+# Multi-stage build for smaller final image
+
+# Build stage
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files
+COPY pyproject.toml requirements.txt ./
+COPY src/ ./src/
+
+# Install dependencies
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Runtime stage
+FROM python:3.12-slim
+
+# Install FFmpeg and yt-dlp
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    curl \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod +x /usr/local/bin/yt-dlp \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /install /usr/local
+
+# Copy application
+COPY --from=builder /app/src ./src
+
+# Create non-root user
+RUN useradd -m -u 1000 mcp && chown -R mcp:mcp /app
+USER mcp
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    MEDIA_CLIP_OUTPUT_DIR=/app/output
+
+# Create output directory
+RUN mkdir -p /app/output
+
+# Run MCP server via stdio
+ENTRYPOINT ["python", "-m", "media_clipping_mcp.server"]

@@ -1,25 +1,40 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>Exe</OutputType>
-    <PackAsTool>false</PackAsTool>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>media-clip</ToolCommandName>
     <Version>1.0.0</Version>
     <Authors>mukul1603</Authors>
     <Description>MCP Server for video/audio clipping using FFmpeg</Description>
     <PackageTags>mcp;media;ffmpeg;clipping;video;audio</PackageTags>
     <RepositoryUrl>https://github.com/mukul1603/MediaClippingMcpServer</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="icon.png" Pack="true" PackagePath="\" Condition="Exists('icon.png')" />
+    <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol" Version="0.1.0-preview.5" />
     <PackageReference Include="FFMpegCore" Version="5.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
     <PackageReference Include="YoutubeExplode" Version="6.6.3" />
+    <PackageReference Include="Stripe.net" Version="53.3.0-beta.1" />
   </ItemGroup>
 
 </Project>

@@ -9,6 +9,9 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Logging.AddConsole(configure => configure.LogToStandardErrorThreshold = LogLevel.Trace);
 
+// Configure license service options
+builder.Services.Configure<LicenseServiceOptions>(builder.Configuration.GetSection(LicenseServiceOptions.SectionName));
+
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
@@ -19,6 +22,8 @@ builder.Services
     .WithTools<DownloadMediaTool>();
 
 builder.Services.AddSingleton<IMediaClippingService, MediaClippingService>();
+builder.Services.AddSingleton<ILicenseService, LicenseService>();
+builder.Services.AddHttpClient<LicenseService>();
 
 var app = builder.Build();
 

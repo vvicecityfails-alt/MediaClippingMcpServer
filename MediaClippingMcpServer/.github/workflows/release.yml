@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MediaClippingMcpServer/MediaClippingMcpServer.csproj
+
+      - name: Build
+        run: dotnet build MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release --no-restore
+
+      - name: Test
+        run: dotnet test MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release --no-build --verbosity normal
+
+  publish-nuget:
+    name: Publish to NuGet
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore MediaClippingMcpServer/MediaClippingMcpServer.csproj
+
+      - name: Pack
+        run: dotnet pack MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release -o ./nupkg --no-build
+
+      - name: Publish to NuGet.org
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  publish-docker:
+    name: Publish Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./MediaClippingMcpServer
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/media-clipping-mcp:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/media-clipping-mcp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish-nuget, publish-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore MediaClippingMcpServer/MediaClippingMcpServer.csproj
+
+      - name: Publish for Windows
+        run: dotnet publish MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64 /p:PublishSingleFile=true
+
+      - name: Publish for Linux
+        run: dotnet publish MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release -r linux-x64 --self-contained true -o ./publish/linux-x64 /p:PublishSingleFile=true
+
+      - name: Publish for macOS
+        run: dotnet publish MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release -r osx-x64 --self-contained true -o ./publish/osx-x64 /p:PublishSingleFile=true
+
+      - name: Publish for macOS ARM64
+        run: dotnet publish MediaClippingMcpServer/MediaClippingMcpServer.csproj -c Release -r osx-arm64 --self-contained true -o ./publish/osx-arm64 /p:PublishSingleFile=true
+
+      - name: Create archives
+        run: |
+          cd ./publish
+          tar -czf media-clip-win-x64.tar.gz -C win-x64 .
+          tar -czf media-clip-linux-x64.tar.gz -C linux-x64 .
+          tar -czf media-clip-osx-x64.tar.gz -C osx-x64 .
+          tar -czf media-clip-osx-arm64.tar.gz -C osx-arm64 .
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: MediaClippingMcpServer v${{ steps.version.outputs.version }}
+          body: |
+            ## MediaClippingMcpServer v${{ steps.version.outputs.version }}
+
+            ### Installation
+
+            **.NET Tool (NuGet):**
+            ```bash
+            dotnet tool install --global MediaClippingMcpServer --version ${{ steps.version.outputs.version }}
+            # Run with:
+            media-clip
+            ```
+
+            **Docker (GHCR):**
+            ```bash
+            docker pull ghcr.io/${{ github.repository_owner }}/media-clipping-mcp:${{ steps.version.outputs.version }}
+            docker run -i --rm ghcr.io/${{ github.repository_owner }}/media-clipping-mcp:${{ steps.version.outputs.version }}
+            ```
+
+            **Standalone Binaries:**
+            Download the appropriate archive for your platform from the assets below.
+
+            ### Requirements
+            - FFmpeg installed and in PATH
+            - yt-dlp for non-YouTube URLs (optional): `pip install yt-dlp`
+
+            ### Changelog
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+          files: |
+            ./publish/media-clip-win-x64.tar.gz
+            ./publish/media-clip-linux-x64.tar.gz
+            ./publish/media-clip-osx-x64.tar.gz
+            ./publish/media-clip-osx-arm64.tar.gz

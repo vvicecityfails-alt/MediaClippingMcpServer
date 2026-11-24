@@ -10,11 +10,13 @@ namespace MediaClippingMcpServer.Tools;
 public class DownloadMediaTool
 {
     private readonly IMediaClippingService _mediaService;
+    private readonly ILicenseService _licenseService;
     private readonly ILogger<DownloadMediaTool> _logger;
 
-    public DownloadMediaTool(IMediaClippingService mediaService, ILogger<DownloadMediaTool> logger)
+    public DownloadMediaTool(IMediaClippingService mediaService, ILicenseService licenseService, ILogger<DownloadMediaTool> logger)
     {
         _mediaService = mediaService;
+        _licenseService = licenseService;
         _logger = logger;
     }
 
@@ -28,6 +30,25 @@ public class DownloadMediaTool
     {
         _logger.LogInformation("MCP Tool: download_media called with url={Url}", url);
 
+        // Check license for YouTube/Vimeo download features
+        var isYouTube = url.Contains("youtube.com") || url.Contains("youtu.be");
+        var isVimeo = url.Contains("vimeo.com");
+
+        string requiredFeature = isYouTube ? LicenseFeatures.YouTubeDownload :
+                                 isVimeo ? LicenseFeatures.VimeoDownload :
+                                 LicenseFeatures.LocalFileOperations;
+
+        if (!await _licenseService.IsFeatureEnabledAsync(requiredFeature, cancellationToken))
+        {
+            var tier = await _licenseService.GetCurrentTierAsync(cancellationToken);
+            return new DownloadMediaResult(
+                Success: false,
+                OutputPath: "",
+                Error: $"Feature '{requiredFeature}' requires {GetTierName(tier)} tier or higher. " +
+                       "Upgrade at https://github.com/sponsors/mukul1603 or use a license key."
+            );
+        }
+
         var request = new DownloadMediaRequest(
             Url: url,
             OutputPath: outputPath,
@@ -37,4 +58,12 @@ public class DownloadMediaTool
 
         return await _mediaService.DownloadMediaAsync(request, cancellationToken);
     }
+
+    private static string GetTierName(LicenseTier tier) => tier switch
+    {
+        LicenseTier.Free => "Pro",
+        LicenseTier.Pro => "Enterprise",
+        LicenseTier.Enterprise => "Enterprise",
+        _ => "Pro"
+    };
 }

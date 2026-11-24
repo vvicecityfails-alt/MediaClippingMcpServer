@@ -10,11 +10,13 @@ namespace MediaClippingMcpServer.Tools;
 public class ConvertMediaTool
 {
     private readonly IMediaClippingService _mediaService;
+    private readonly ILicenseService _licenseService;
     private readonly ILogger<ConvertMediaTool> _logger;
 
-    public ConvertMediaTool(IMediaClippingService mediaService, ILogger<ConvertMediaTool> logger)
+    public ConvertMediaTool(IMediaClippingService mediaService, ILicenseService licenseService, ILogger<ConvertMediaTool> logger)
     {
         _mediaService = mediaService;
+        _licenseService = licenseService;
         _logger = logger;
     }
 
@@ -28,6 +30,15 @@ public class ConvertMediaTool
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("MCP Tool: convert_media called with input={InputPath}", inputPath);
+
+        // Check license for local file operations (free tier feature)
+        if (!await _licenseService.IsFeatureEnabledAsync(LicenseFeatures.LocalFileOperations, cancellationToken))
+        {
+            return new ToolResult(
+                Success: false,
+                Error: "Local file operations require a valid license."
+            );
+        }
 
         var request = new ConvertMediaRequest(
             InputPath: inputPath,

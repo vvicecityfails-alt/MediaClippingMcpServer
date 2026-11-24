@@ -10,11 +10,13 @@ namespace MediaClippingMcpServer.Tools;
 public class ExtractAudioTool
 {
     private readonly IMediaClippingService _mediaService;
+    private readonly ILicenseService _licenseService;
     private readonly ILogger<ExtractAudioTool> _logger;
 
-    public ExtractAudioTool(IMediaClippingService mediaService, ILogger<ExtractAudioTool> logger)
+    public ExtractAudioTool(IMediaClippingService mediaService, ILicenseService licenseService, ILogger<ExtractAudioTool> logger)
     {
         _mediaService = mediaService;
+        _licenseService = licenseService;
         _logger = logger;
     }
 
@@ -27,6 +29,15 @@ public class ExtractAudioTool
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("MCP Tool: extract_audio called with input={InputPath}", inputPath);
+
+        // Check license for local file operations (free tier feature)
+        if (!await _licenseService.IsFeatureEnabledAsync(LicenseFeatures.LocalFileOperations, cancellationToken))
+        {
+            return new ToolResult(
+                Success: false,
+                Error: "Local file operations require a valid license."
+            );
+        }
 
         var request = new ExtractAudioRequest(
             InputPath: inputPath,

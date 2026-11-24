@@ -4,70 +4,131 @@
 [![Patreon](https://img.shields.io/badge/Patreon-Support%20Me-F96854?logo=patreon&logoColor=white)](https://patreon.com/mukul1603)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![NuGet](https://img.shields.io/nuget/v/MediaClippingMcpServer?logo=nuget)](https://www.nuget.org/packages/MediaClippingMcpServer)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/mukul1603/MediaClippingMcpServer/pkgs/container/media-clipping-mcp)
 
 An MCP (Model Context Protocol) server that provides video and audio clipping capabilities using FFmpeg. Built with C#/.NET 10.
 
 ## Features
 
-- **Download Media** - Download videos from YouTube, Vimeo, Twitter, and 1000+ sites (via yt-dlp)
-- **Clip Media** - Trim video/audio by start/end time or duration
-- **Extract Audio** - Extract audio track from video files
-- **Convert Media** - Convert between formats with codec/preset control
-- **Get Media Info** - Analyze media files (duration, codecs, resolution, bitrate)
+| Feature | Free | Pro | Enterprise |
+|---------|:----:|:---:|:----------:|
+| **Local File Operations** (clip, extract, convert, info) | ✅ | ✅ | ✅ |
+| **YouTube Download** | ❌ | ✅ | ✅ |
+| **Vimeo/Twitter/1000+ sites** | ❌ | ✅ | ✅ |
+| **Batch Processing** | ❌ | ✅ | ✅ |
+| **Priority Queue** | ❌ | ✅ | ✅ |
+| **Custom Tools** | ❌ | ❌ | ✅ |
+| **SSO / Audit Logs / SLA** | ❌ | ❌ | ✅ |
 
 ## Installation
 
 ### Prerequisites
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [FFmpeg](https://ffmpeg.org/download.html) installed and in PATH
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) for non-YouTube URLs (optional but recommended)
 
-### From Source
+### Option 1: .NET Global Tool (Recommended)
+
+```bash
+# Install from NuGet
+dotnet tool install --global MediaClippingMcpServer
+
+# Run
+media-clip
+```
+
+### Option 2: Docker (Cross-platform)
+
+```bash
+# Pull from GHCR
+docker pull ghcr.io/mukul1603/media-clipping-mcp:latest
+
+# Run (stdio transport for MCP)
+docker run -i --rm ghcr.io/mukul1603/media-clipping-mcp:latest
+```
+
+### Option 3: Standalone Binaries
+
+Download from [GitHub Releases](https://github.com/mukul1603/MediaClippingMcpServer/releases):
+- `media-clip-win-x64.tar.gz` - Windows x64
+- `media-clip-linux-x64.tar.gz` - Linux x64
+- `media-clip-osx-x64.tar.gz` - macOS x64
+- `media-clip-osx-arm64.tar.gz` - macOS ARM64 (Apple Silicon)
+
+```bash
+# Extract and run
+tar -xzf media-clip-linux-x64.tar.gz
+./MediaClippingMcpServer
+```
+
+### Option 4: From Source
 
 ```bash
 git clone https://github.com/mukul1603/MediaClippingMcpServer.git
 cd MediaClippingMcpServer
 dotnet build -c Release
-```
-
-### As a .NET Tool (Planned)
-
-```bash
-dotnet tool install --global MediaClippingMcpServer
+dotnet run --project MediaClippingMcpServer/MediaClippingMcpServer.csproj
 ```
 
 ## Usage
 
 ### With Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+**Free Tier (Local operations only):**
 
 ```json
 {
   "mcpServers": {
     "media-clipping": {
-      "command": "dotnet",
-      "args": ["run", "--project", "/path/to/MediaClippingMcpServer/MediaClippingMcpServer.csproj"],
-      "env": {}
-    }
-  }
-}
-```
-
-Or if installed as a tool:
-
-```json
-{
-  "mcpServers": {
-    "media-clipping": {
-      "command": "MediaClippingMcpServer",
+      "command": "media-clip",
       "args": [],
       "env": {}
     }
   }
 }
 ```
+
+**Pro/Enterprise Tier (with license key):**
+
+```json
+{
+  "mcpServers": {
+    "media-clipping": {
+      "command": "media-clip",
+      "args": [],
+      "env": {
+        "MEDIA_CLIP_LICENSE_KEY": "your-license-key-here"
+      }
+    }
+  }
+}
+```
+
+**Using Docker:**
+
+```json
+{
+  "mcpServers": {
+    "media-clipping": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "ghcr.io/mukul1603/media-clipping-mcp:latest"],
+      "env": {
+        "MEDIA_CLIP_LICENSE_KEY": "your-license-key-here"
+      }
+    }
+  }
+}
+```
+
+### License Configuration
+
+Licenses can be provided via:
+1. **Environment variable** (recommended): `MEDIA_CLIP_LICENSE_KEY`
+2. **License file**: Place `license.json` in the working directory
+3. **appsettings.json**: Configure `License:StripeSecretKey` for automatic Stripe validation
+
+Get your license key by [subscribing on GitHub Sponsors](https://github.com/sponsors/mukul1603) or [purchasing a license](https://github.com/mukul1603/MediaClippingMcpServer#pricing).
 
 ### Available Tools
 
@@ -204,11 +265,25 @@ MediaClippingMcpServer/
 - Microsoft.Extensions.Hosting / Logging
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) - External tool for non-YouTube sites (optional)
 
+## Pricing
+
+| Tier | Price | Best For |
+|------|-------|----------|
+| **Free** | $0 | Personal use, local files only |
+| **Pro** | $10/mo | Content creators, developers needing YouTube/Vimeo download |
+| **Enterprise** | Custom | Teams needing SSO, audit logs, SLA, custom tools |
+
+[**Subscribe on GitHub Sponsors →**](https://github.com/sponsors/mukul1603)
+
 ## Monetization
 
-This project is free and open source. If you find it useful, consider supporting development:
+This project uses an **Open Core** model:
+- **Core (MIT)**: All local file operations free forever
+- **Pro Features**: YouTube/Vimeo download, batch processing require subscription
+- **Revenue funds**: Development, testing, FFmpeg/yt-dlp compatibility, support
 
-- **GitHub Sponsors**: [github.com/sponsors/mukul1603](https://github.com/sponsors/mukul1603)
+Support development:
+- **GitHub Sponsors**: [github.com/sponsors/mukul1603](https://github.com/sponsors/mukul1603) (zero fees)
 - **Patreon**: [patreon.com/mukul1603](https://patreon.com/mukul1603)
 
 ## License
